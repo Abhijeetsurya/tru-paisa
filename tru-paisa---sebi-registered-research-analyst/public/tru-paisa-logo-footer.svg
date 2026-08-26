@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 330 90" width="100%" height="100%">
+  <defs>
+    <linearGradient id="goldCoinsFooter" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE047" />
+      <stop offset="50%" stop-color="#EAB308" />
+      <stop offset="100%" stop-color="#CA8A04" />
+    </linearGradient>
+  </defs>
+  
+  <!-- TRU PAISA Text (White for dark footer) -->
+  <text x="10" y="52" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-weight="800" font-size="42" fill="#FFFFFF" letter-spacing="-1">TR</text>
+  
+  <!-- U with Checkmark -->
+  <g transform="translate(74, 18)">
+    <path d="M5 0 C5 0, 5 22, 5 28 C5 34, 12 36, 18 36 C24 36, 31 34, 31 28 C31 22, 31 0, 31 0" fill="none" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round"/>
+    <path d="M-8 12 Q 10 35, 38 -2" fill="none" stroke="#22C55E" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  
+  <text x="125" y="52" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-weight="800" font-size="42" fill="#FFFFFF" letter-spacing="-1">PA</text>
+  
+  <!-- I as Stack of Coins -->
+  <g transform="translate(193, 20)">
+    <ellipse cx="14" cy="2" rx="14" ry="5" fill="#FACC15" stroke="#CA8A04" stroke-width="1.5"/>
+    <ellipse cx="14" cy="7" rx="14" ry="5" fill="url(#goldCoinsFooter)" stroke="#CA8A04" stroke-width="1.5"/>
+    <ellipse cx="14" cy="12" rx="14" ry="5" fill="url(#goldCoinsFooter)" stroke="#CA8A04" stroke-width="1.5"/>
+    <ellipse cx="14" cy="17" rx="14" ry="5" fill="url(#goldCoinsFooter)" stroke="#CA8A04" stroke-width="1.5"/>
+    <ellipse cx="14" cy="22" rx="14" ry="5" fill="url(#goldCoinsFooter)" stroke="#CA8A04" stroke-width="1.5"/>
+    <ellipse cx="14" cy="27" rx="14" ry="5" fill="#CA8A04" stroke="#854D0E" stroke-width="1.5"/>
+  </g>
+  
+  <text x="225" y="52" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-weight="800" font-size="42" fill="#FFFFFF" letter-spacing="-1">SA</text>
+  
+  <!-- Subtitle -->
+  <text x="12" y="78" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-weight="700" font-size="13" fill="#22C55E" letter-spacing="2.5">SEBI REGISTERED RA</text>
+</svg>
