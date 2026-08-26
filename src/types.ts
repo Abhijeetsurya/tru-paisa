@@ -2,7 +2,7 @@
 // META PIXEL CONFIGURATION
 // Replace this value after deploying the website.
 // ==========================================
-export const META_PIXEL_ID = "REPLACE_WITH_REAL_META_PIXEL_ID";
+export const META_PIXEL_ID = "4539111476336869";
 
 export type TradingExperience = 
   | 'Beginner'
