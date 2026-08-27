@@ -1,44 +1,72 @@
 import { UTMParameters, META_PIXEL_ID } from '../types';
 
-// Automatically initialize Meta Pixel globally if a real ID is provided
-if (typeof window !== 'undefined' && META_PIXEL_ID !== "4539111476336869") {
-  if (!window.fbq) {
-    (function(f: any, b: any, e: any, v: any, n?: any, t?: any, s?: any) {
-      if (f.fbq) return;
-      n = f.fbq = function() {
-        n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments);
-      };
-      if (!f._fbq) f._fbq = n;
-      n.push = n;
-      n.loaded = !0;
-      n.version = '2.0';
-      n.queue = [];
-      t = b.createElement(e);
-      t.async = !0;
-      t.src = v;
-      s = b.getElementsByTagName(e)[0];
-      s.parentNode.insertBefore(t, s);
-    })(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
-
-    window.fbq('init', META_PIXEL_ID);
-    window.fbq('track', 'PageView');
-  }
-}
-
 declare global {
   interface Window {
-    fbq?: (...args: unknown[]) => void;
+    fbq?: (...args: any[]) => void;
+    _fbq?: any;
   }
 }
 
 /**
- * Extracts UTM parameters and referral information from current URL
+ * Initialize Meta Pixel
+ */
+if (
+  typeof window !== 'undefined' &&
+  META_PIXEL_ID &&
+  META_PIXEL_ID !== 'REPLACE_WITH_REAL_META_PIXEL_ID'
+) {
+  if (typeof window.fbq !== 'function') {
+    (function (f: any, b: Document, e: string, v: string) {
+      if (f.fbq) return;
+
+      const n: any = function (...args: any[]) {
+        if (n.callMethod) {
+          n.callMethod.apply(n, args);
+        } else {
+          n.queue.push(args);
+        }
+      };
+
+      if (!f._fbq) {
+        f._fbq = n;
+      }
+
+      n.push = n;
+      n.loaded = true;
+      n.version = '2.0';
+      n.queue = [];
+
+      const t = b.createElement(e);
+      t.async = true;
+      t.src = v;
+
+      const s = b.getElementsByTagName(e)[0];
+
+      if (s && s.parentNode) {
+        s.parentNode.insertBefore(t, s);
+      } else {
+        b.head.appendChild(t);
+      }
+
+      f.fbq = n;
+    })(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
+
+    window.fbq('init', META_PIXEL_ID);
+    window.fbq('track', 'PageView');
+
+    console.log('[Meta Pixel] Initialized:', META_PIXEL_ID);
+  }
+}
+
+/**
+ * Extract UTM parameters and referral information from current URL
  */
 export function getUtmParamsFromUrl(): UTMParameters {
   if (typeof window === 'undefined') return {};
 
   try {
     const params = new URLSearchParams(window.location.search);
+
     return {
       utm_source: params.get('utm_source') || undefined,
       utm_medium: params.get('utm_medium') || undefined,
@@ -54,19 +82,26 @@ export function getUtmParamsFromUrl(): UTMParameters {
 }
 
 /**
- * Fires Meta Ads 'Lead' conversion event
+ * Fires Meta Ads Lead conversion event
+ *
+ * Call this ONLY after the website has successfully submitted
+ * the user's inquiry.
  */
-export function trackLeadConversion() {
-  if (typeof window !== 'undefined' && META_PIXEL_ID !== "REPLACE_WITH_REAL_META_PIXEL_ID" && typeof window.fbq === 'function') {
+export function trackLeadConversion(): void {
+  if (
+    typeof window !== 'undefined' &&
+    typeof window.fbq === 'function'
+  ) {
     try {
       window.fbq('track', 'Lead');
+
+      console.log('[Meta Pixel] Lead event sent successfully');
     } catch (err) {
       console.warn('[Meta Pixel] Error tracking Lead event:', err);
     }
   } else {
-    console.info('[Meta Ads Lead Conversion]', {
-      note: 'Meta Pixel is inactive while META_PIXEL_ID placeholder is used.',
-      event: 'Lead',
-    });
+    console.warn(
+      '[Meta Pixel] Lead event could not be sent because fbq is not available.'
+    );
   }
 }
