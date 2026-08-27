@@ -1,7 +1,7 @@
 import { UTMParameters, META_PIXEL_ID } from '../types';
 
 // Automatically initialize Meta Pixel globally if a real ID is provided
-if (typeof window !== 'undefined' && META_PIXEL_ID !== "REPLACE_WITH_REAL_META_PIXEL_ID") {
+if (typeof window !== 'undefined' && META_PIXEL_ID !== "4539111476336869") {
   if (!window.fbq) {
     (function(f: any, b: any, e: any, v: any, n?: any, t?: any, s?: any) {
       if (f.fbq) return;
