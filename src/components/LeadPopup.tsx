@@ -302,12 +302,12 @@ export default function LeadPopup({
                 id="lead-popup-heading"
                 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight"
               >
-                Get Research Details
+                Enquire About Paid Research Services
               </h2>
               
               {/* Supporting Text */}
               <p className="text-xs sm:text-sm text-slate-600 mt-1 leading-normal">
-                Interested in our research services? Share your details and our team will contact you with more information.
+                Plans starting from <span className="font-bold text-slate-900">₹5,999 + 18% GST</span>. Our team will contact you to discuss available paid research services and plans.
               </p>
             </div>
 
@@ -542,7 +542,7 @@ export default function LeadPopup({
                     </>
                   ) : (
                     <>
-                      <span>Submit Inquiry</span>
+                      <span>Request Paid Research Consultation</span>
                       <Send className="w-4 h-4" />
                     </>
                   )}

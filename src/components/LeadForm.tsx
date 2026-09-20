@@ -204,17 +204,30 @@ export default function LeadForm({ utmParams, preselectedService }: LeadFormProp
           <div className="text-center mb-6">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-800 text-xs font-semibold mb-2">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" />
-              <span>Official Research Inquiry</span>
+              <span>Paid Research Consultation</span>
             </div>
             <h2 
               id="lead-form-heading"
               className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight mb-1.5"
             >
-              Get Research Details
+              Enquire About Paid Research Services
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto">
-              Fill in your details and our team will contact you with information about the available research services.
+              Our team will contact you to discuss the available paid research services and plans.
             </p>
+          </div>
+
+          {/* Paid-Service Information Card Immediately Above Form */}
+          <div className="mb-5 p-4 bg-slate-50 border border-slate-200 rounded-xl text-center shadow-2xs">
+            <div className="text-xs font-bold uppercase tracking-wide text-emerald-800 mb-0.5">
+              Paid Research Services
+            </div>
+            <div className="text-sm sm:text-base font-extrabold text-slate-900 mb-1">
+              Plans starting from ₹5,999 + 18% GST
+            </div>
+            <div className="text-xs text-slate-600 font-medium">
+              Please review the available plans and pricing before submitting an inquiry.
+            </div>
           </div>
 
           {/* Success State */}
@@ -502,7 +515,7 @@ export default function LeadForm({ utmParams, preselectedService }: LeadFormProp
                     </>
                   ) : (
                     <>
-                      <span>Submit & Get Details</span>
+                      <span>Request Paid Research Consultation</span>
                       <Send className="w-4 h-4" />
                     </>
                   )}

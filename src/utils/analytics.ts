@@ -13,7 +13,7 @@ declare global {
 if (
   typeof window !== 'undefined' &&
   META_PIXEL_ID &&
-  META_PIXEL_ID !== 'REPLACE_WITH_REAL_META_PIXEL_ID'
+  META_PIXEL_ID !== ('REPLACE_WITH_REAL_META_PIXEL_ID' as string)
 ) {
   if (typeof window.fbq !== 'function') {
     (function (f: any, b: Document, e: string, v: string) {
@@ -36,7 +36,7 @@ if (
       n.version = '2.0';
       n.queue = [];
 
-      const t = b.createElement(e);
+      const t = b.createElement(e) as HTMLScriptElement;
       t.async = true;
       t.src = v;
 
@@ -51,8 +51,10 @@ if (
       f.fbq = n;
     })(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
 
-    window.fbq('init', META_PIXEL_ID);
-    window.fbq('track', 'PageView');
+    if (window.fbq) {
+      (window.fbq as any)('init', META_PIXEL_ID);
+      (window.fbq as any)('track', 'PageView');
+    }
 
     console.log('[Meta Pixel] Initialized:', META_PIXEL_ID);
   }
