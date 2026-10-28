@@ -1,13 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   CheckCircle, 
   Send, 
   User, 
   Phone, 
   Mail, 
-  MapPin, 
-  Award, 
-  Briefcase, 
   Lock, 
   AlertCircle,
   RefreshCw,
@@ -16,8 +13,7 @@ import {
 import { 
   LeadFormData, 
   ResearchServiceType, 
-  UTMParameters,
-  VERIFIED_ANALYST_INFO
+  UTMParameters
 } from '../types';
 import { trackLeadConversion } from '../utils/analytics';
 
@@ -29,11 +25,8 @@ interface LeadFormProps {
 export default function LeadForm({ utmParams, preselectedService }: LeadFormProps) {
   const [formData, setFormData] = useState<LeadFormData>({
     fullName: '',
-    mobileNumber: '',
     email: '',
-    city: '',
-    tradingExperience: '',
-    interestedService: preselectedService || 'Equity Research',
+    mobileNumber: '',
     consentAgreed: false,
   });
 
@@ -42,18 +35,21 @@ export default function LeadForm({ utmParams, preselectedService }: LeadFormProp
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isSuccess, setIsSuccess] = useState<boolean>(false);
 
-  // Update selected service if parent changes it
-  useEffect(() => {
-    if (preselectedService) {
-      setFormData(prev => ({ ...prev, interestedService: preselectedService }));
-    }
-  }, [preselectedService]);
-
   const validateField = (name: keyof LeadFormData, value: unknown): string => {
     switch (name) {
       case 'fullName':
         if (!value || typeof value !== 'string' || value.trim().length < 2) {
           return 'Please enter your full name.';
+        }
+        return '';
+      case 'email':
+        if (!value || typeof value !== 'string' || value.trim() === '') {
+          return 'Email address is required.';
+        } else {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(value.trim())) {
+            return 'Please enter a valid email address.';
+          }
         }
         return '';
       case 'mobileNumber': {
@@ -69,19 +65,6 @@ export default function LeadForm({ utmParams, preselectedService }: LeadFormProp
         }
         return '';
       }
-      case 'interestedService':
-        if (!value || typeof value !== 'string' || value.trim() === '') {
-          return 'Please select an interested research service.';
-        }
-        return '';
-      case 'email':
-        if (value && typeof value === 'string' && value.trim() !== '') {
-          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-          if (!emailRegex.test(value.trim())) {
-            return 'Please enter a valid email address.';
-          }
-        }
-        return '';
       case 'consentAgreed':
         if (!value) {
           return 'Please check the consent box to proceed.';
@@ -92,9 +75,9 @@ export default function LeadForm({ utmParams, preselectedService }: LeadFormProp
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type } = e.target;
-    const checked = (e.target as HTMLInputElement).checked;
+    const checked = e.target.checked;
 
     setFormData(prev => ({
       ...prev,
@@ -121,17 +104,15 @@ export default function LeadForm({ utmParams, preselectedService }: LeadFormProp
     e.preventDefault();
 
     const nameError = validateField('fullName', formData.fullName);
-    const mobileError = validateField('mobileNumber', formData.mobileNumber);
-    const serviceError = validateField('interestedService', formData.interestedService);
     const emailError = validateField('email', formData.email);
+    const mobileError = validateField('mobileNumber', formData.mobileNumber);
     const consentError = validateField('consentAgreed', formData.consentAgreed);
 
-    if (nameError || mobileError || serviceError || emailError || consentError) {
+    if (nameError || emailError || mobileError || consentError) {
       setErrors({
         fullName: nameError,
-        mobileNumber: mobileError,
-        interestedService: serviceError,
         email: emailError,
+        mobileNumber: mobileError,
         consentAgreed: consentError,
       });
       return;
@@ -141,16 +122,13 @@ export default function LeadForm({ utmParams, preselectedService }: LeadFormProp
     setSubmissionError('');
 
     try {
-      // Send to Google Apps Script Web App with timeout protection
       const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx9jj5AsS0f50Fi0VkCf3n8krt6THC75VMz34Cqq5OLkziaQ7nojY7CUF1fCefG4mHbug/exec';
       
       const submitData = new URLSearchParams();
-      submitData.append("name", formData.fullName);
-      submitData.append("mobile", formData.mobileNumber);
-      submitData.append("email", formData.email || "");
-      submitData.append("city", formData.city || "");
-      submitData.append("service", formData.interestedService);
-      submitData.append("experience", formData.tradingExperience || "");
+      submitData.append("name", formData.fullName.trim());
+      submitData.append("email", formData.email.trim());
+      submitData.append("mobile", formData.mobileNumber.trim());
+      submitData.append("service", preselectedService || "Equity Research");
 
       submitData.append("utm_source", utmParams.utm_source || "");
       submitData.append("utm_medium", utmParams.utm_medium || "");
@@ -170,8 +148,12 @@ export default function LeadForm({ utmParams, preselectedService }: LeadFormProp
 
       clearTimeout(timeoutId);
 
-      // Successful backend acceptance -> Trigger Meta Lead Conversion -> Success State
-      trackLeadConversion();
+      // Track lead conversions in Meta Pixel & GA4
+      trackLeadConversion({
+        submissionId: `inline_${Date.now()}`,
+        formType: 'inline',
+        service: preselectedService || 'Equity Research',
+      });
       setIsSuccess(true);
     } catch (err) {
       console.error('Lead submission error:', err);
@@ -184,11 +166,8 @@ export default function LeadForm({ utmParams, preselectedService }: LeadFormProp
   const handleResetForm = () => {
     setFormData({
       fullName: '',
-      mobileNumber: '',
       email: '',
-      city: '',
-      tradingExperience: '',
-      interestedService: 'Equity Research',
+      mobileNumber: '',
       consentAgreed: false,
     });
     setErrors({});
@@ -197,7 +176,7 @@ export default function LeadForm({ utmParams, preselectedService }: LeadFormProp
 
   return (
     <section id="lead-form-section" className="py-8 sm:py-12 bg-slate-50 border-b border-slate-200/80 scroll-mt-16">
-      <div className="max-w-2xl mx-auto px-4 sm:px-6">
+      <div className="max-w-xl mx-auto px-4 sm:px-6">
         <div className="bg-white border border-slate-200/90 rounded-2xl p-5 sm:p-8 shadow-sm relative overflow-hidden">
           
           {/* Header */}
@@ -213,11 +192,11 @@ export default function LeadForm({ utmParams, preselectedService }: LeadFormProp
               Enquire About Paid Research Services
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto">
-              Our team will contact you to discuss the available paid research services and plans.
+              Please enter your details below. Our team will contact you to discuss available research services and plans.
             </p>
           </div>
 
-          {/* Paid-Service Information Card Immediately Above Form */}
+          {/* Paid-Service Information Card */}
           <div className="mb-5 p-4 bg-slate-50 border border-slate-200 rounded-xl text-center shadow-2xs">
             <div className="text-xs font-bold uppercase tracking-wide text-emerald-800 mb-0.5">
               Paid Research Services
@@ -226,7 +205,7 @@ export default function LeadForm({ utmParams, preselectedService }: LeadFormProp
               Plans starting from ₹5,999 + 18% GST
             </div>
             <div className="text-xs text-slate-600 font-medium">
-              Please review the available plans and pricing before submitting an inquiry.
+              Paid research service • Not free tips • Please review plans before submitting
             </div>
           </div>
 
@@ -243,13 +222,13 @@ export default function LeadForm({ utmParams, preselectedService }: LeadFormProp
                 Submission Received
               </h3>
               <p className="text-sm text-slate-700 max-w-md mx-auto mb-5 leading-relaxed">
-                Thank you. Your details have been submitted successfully. Our team will contact you shortly.
+                Thank you. Your details have been submitted successfully. Our team will contact you shortly regarding our paid research plans.
               </p>
 
               <div className="p-3.5 bg-white border border-slate-200/80 rounded-lg max-w-md mx-auto text-left text-xs text-slate-600 mb-5 space-y-1">
                 <div><span className="font-semibold text-slate-800">Name:</span> {formData.fullName}</div>
+                <div><span className="font-semibold text-slate-800">Email:</span> {formData.email}</div>
                 <div><span className="font-semibold text-slate-800">Mobile:</span> +91 {formData.mobileNumber}</div>
-                <div><span className="font-semibold text-slate-800">Service:</span> {formData.interestedService || 'General Inquiry'}</div>
               </div>
 
               <button
@@ -263,10 +242,10 @@ export default function LeadForm({ utmParams, preselectedService }: LeadFormProp
               </button>
             </div>
           ) : (
-            /* Compact Lead Form */
+            /* Lead Form - ONLY 3 FIELDS: Name, Email, Number */
             <form id="lead-capture-form" onSubmit={handleSubmit} noValidate className="space-y-4">
               
-              {/* Row 1: Full Name (Required) */}
+              {/* 1. Full Name */}
               <div>
                 <label 
                   htmlFor="field-fullName" 
@@ -300,7 +279,41 @@ export default function LeadForm({ utmParams, preselectedService }: LeadFormProp
                 )}
               </div>
 
-              {/* Row 2: Mobile Number (Required) */}
+              {/* 2. Email Address */}
+              <div>
+                <label 
+                  htmlFor="field-email" 
+                  className="block text-xs font-bold text-slate-800 mb-1"
+                >
+                  Email Address <span className="text-emerald-700">*</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <Mail className="w-4 h-4" />
+                  </div>
+                  <input
+                    type="email"
+                    id="field-email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="name@example.com"
+                    required
+                    autoComplete="email"
+                    className={`w-full pl-10 pr-3.5 py-2.5 sm:py-3 text-sm bg-white border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-600/30 transition-colors text-slate-900 placeholder:text-slate-400 ${
+                      errors.email ? 'border-red-400 bg-red-50/20' : 'border-slate-300 hover:border-slate-400'
+                    }`}
+                  />
+                </div>
+                {errors.email && (
+                  <p className="mt-1 text-xs text-red-600 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{errors.email}</span>
+                  </p>
+                )}
+              </div>
+
+              {/* 3. Mobile Number */}
               <div>
                 <label 
                   htmlFor="field-mobileNumber" 
@@ -341,133 +354,19 @@ export default function LeadForm({ utmParams, preselectedService }: LeadFormProp
                 )}
               </div>
 
-              {/* Row 3: Interested Service (Required) */}
-              <div>
-                <label 
-                  htmlFor="field-interestedService" 
-                  className="block text-xs font-bold text-slate-800 mb-1"
-                >
-                  Interested Service <span className="text-emerald-700">*</span>
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                    <Briefcase className="w-4 h-4" />
-                  </div>
-                  <select
-                    id="field-interestedService"
-                    name="interestedService"
-                    value={formData.interestedService}
-                    onChange={handleChange}
-                    required
-                    className="w-full pl-10 pr-8 py-2.5 sm:py-3 text-sm bg-white border border-slate-300 hover:border-slate-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-600/30 transition-colors text-slate-900 appearance-none cursor-pointer"
-                  >
-                    <option value="Equity Research">Equity Research</option>
-                    <option value="Intraday Research">Intraday Research</option>
-                    <option value="Positional Research">Positional Research</option>
-                    <option value="Futures Research">Futures Research</option>
-                    <option value="Options Research">Options Research</option>
-                  </select>
-                  <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
-                    ▼
-                  </div>
+              {/* Paid Service Qualification Notice */}
+              <div className="p-3.5 bg-amber-50/80 border border-amber-200/90 rounded-xl text-left">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-amber-950 mb-0.5">
+                  <AlertCircle className="w-4 h-4 text-amber-700 shrink-0" />
+                  <span>Paid Research Services Notice</span>
                 </div>
-                {errors.interestedService && (
-                  <p className="mt-1 text-xs text-red-600 flex items-center gap-1">
-                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                    <span>{errors.interestedService}</span>
-                  </p>
-                )}
-              </div>
-
-              {/* Row 4: Optional Fields - Trading Experience */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-                {/* Trading Experience (Optional) */}
-                <div>
-                  <label 
-                    htmlFor="field-tradingExperience" 
-                    className="block text-xs font-semibold text-slate-700 mb-1"
-                  >
-                    Experience <span className="text-[10px] font-normal text-slate-600">(Optional)</span>
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400">
-                      <Award className="w-3.5 h-3.5" />
-                    </div>
-                    <select
-                      id="field-tradingExperience"
-                      name="tradingExperience"
-                      value={formData.tradingExperience}
-                      onChange={handleChange}
-                      className="w-full pl-8 pr-6 py-2 text-xs bg-white border border-slate-300 hover:border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-600/30 transition-colors text-slate-900 appearance-none cursor-pointer"
-                    >
-                      <option value="">Select</option>
-                      <option value="Beginner">Beginner</option>
-                      <option value="Less than 1 year">&lt; 1 year</option>
-                      <option value="1–3 years">1–3 years</option>
-                      <option value="More than 3 years">&gt; 3 years</option>
-                    </select>
-                    <div className="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none text-slate-400 text-[10px]">
-                      ▼
-                    </div>
-                  </div>
-                </div>
-
-                {/* Email (Optional) */}
-                <div>
-                  <label 
-                    htmlFor="field-email" 
-                    className="block text-xs font-semibold text-slate-700 mb-1"
-                  >
-                    Email <span className="text-[10px] font-normal text-slate-600">(Optional)</span>
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400">
-                      <Mail className="w-3.5 h-3.5" />
-                    </div>
-                    <input
-                      type="email"
-                      id="field-email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      placeholder="name@email.com"
-                      autoComplete="email"
-                      className="w-full pl-8 pr-2.5 py-2 text-xs bg-white border border-slate-300 hover:border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-600/30 transition-colors text-slate-900 placeholder:text-slate-400"
-                    />
-                  </div>
-                  {errors.email && (
-                    <p className="mt-0.5 text-[11px] text-red-600">{errors.email}</p>
-                  )}
-                </div>
-
-                {/* City (Optional) */}
-                <div>
-                  <label 
-                    htmlFor="field-city" 
-                    className="block text-xs font-semibold text-slate-700 mb-1"
-                  >
-                    City <span className="text-[10px] font-normal text-slate-600">(Optional)</span>
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400">
-                      <MapPin className="w-3.5 h-3.5" />
-                    </div>
-                    <input
-                      type="text"
-                      id="field-city"
-                      name="city"
-                      value={formData.city}
-                      onChange={handleChange}
-                      placeholder="Your city"
-                      autoComplete="address-level2"
-                      className="w-full pl-8 pr-2.5 py-2 text-xs bg-white border border-slate-300 hover:border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-600/30 transition-colors text-slate-900 placeholder:text-slate-400"
-                    />
-                  </div>
-                </div>
+                <p className="text-xs text-amber-900 leading-relaxed">
+                  Tru Paisa provides paid research advisory services starting from <strong>₹5,999 + 18% GST</strong>. We do not provide free tips, free trials, or assured returns.
+                </p>
               </div>
 
               {/* Consent Checkbox */}
-              <div className="pt-2">
+              <div className="pt-1">
                 <div className="flex items-start gap-2.5">
                   <input
                     type="checkbox"

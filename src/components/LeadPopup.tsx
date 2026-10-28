@@ -6,8 +6,6 @@ import {
   User, 
   Phone, 
   Mail, 
-  Award, 
-  Briefcase, 
   Lock, 
   AlertCircle,
   Shield
@@ -35,11 +33,8 @@ export default function LeadPopup({
 }: LeadPopupProps) {
   const [formData, setFormData] = useState<LeadFormData>({
     fullName: '',
-    mobileNumber: '',
     email: '',
-    city: '',
-    tradingExperience: '',
-    interestedService: preselectedService || '',
+    mobileNumber: '',
     consentAgreed: false,
   });
 
@@ -51,21 +46,20 @@ export default function LeadPopup({
   const modalRef = useRef<HTMLDivElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
 
-  // Sync preselectedService and reset states whenever popup opens
+  // Reset form states and focus name input whenever popup opens
   useEffect(() => {
     if (isOpen) {
-      setFormData(prev => ({
-        ...prev,
-        interestedService: preselectedService || prev.interestedService || '',
+      setFormData({
+        fullName: '',
+        email: '',
+        mobileNumber: '',
         consentAgreed: false,
-      }));
+      });
       setErrors({});
       setIsSuccess(false);
 
-      // Prevent background page scrolling while modal is open
       document.body.style.overflow = 'hidden';
 
-      // Focus first input field after animation mounts
       const timer = setTimeout(() => {
         nameInputRef.current?.focus();
       }, 150);
@@ -77,7 +71,7 @@ export default function LeadPopup({
     } else {
       document.body.style.overflow = '';
     }
-  }, [isOpen, preselectedService]);
+  }, [isOpen]);
 
   // Handle Escape keyboard shortcut to close modal
   useEffect(() => {
@@ -104,6 +98,16 @@ export default function LeadPopup({
           return 'Please enter your full name (minimum 2 characters).';
         }
         return '';
+      case 'email':
+        if (!value || typeof value !== 'string' || value.trim() === '') {
+          return 'Email address is required.';
+        } else {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(value.trim())) {
+            return 'Please enter a valid email address.';
+          }
+        }
+        return '';
       case 'mobileNumber': {
         if (!value || typeof value !== 'string') {
           return 'Mobile number is required.';
@@ -117,19 +121,6 @@ export default function LeadPopup({
         }
         return '';
       }
-      case 'interestedService':
-        if (!value || typeof value !== 'string' || value.trim() === '') {
-          return 'Please select an interested research service.';
-        }
-        return '';
-      case 'email':
-        if (value && typeof value === 'string' && value.trim() !== '') {
-          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-          if (!emailRegex.test(value.trim())) {
-            return 'Please enter a valid email address.';
-          }
-        }
-        return '';
       case 'consentAgreed':
         if (!value) {
           return 'Please check the consent box to proceed.';
@@ -140,9 +131,9 @@ export default function LeadPopup({
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type } = e.target;
-    const checked = (e.target as HTMLInputElement).checked;
+    const checked = e.target.checked;
 
     setFormData(prev => ({
       ...prev,
@@ -169,17 +160,15 @@ export default function LeadPopup({
     e.preventDefault();
 
     const nameError = validateField('fullName', formData.fullName);
-    const mobileError = validateField('mobileNumber', formData.mobileNumber);
-    const serviceError = validateField('interestedService', formData.interestedService);
     const emailError = validateField('email', formData.email);
+    const mobileError = validateField('mobileNumber', formData.mobileNumber);
     const consentError = validateField('consentAgreed', formData.consentAgreed);
 
-    if (nameError || mobileError || serviceError || emailError || consentError) {
+    if (nameError || emailError || mobileError || consentError) {
       setErrors({
         fullName: nameError,
-        mobileNumber: mobileError,
-        interestedService: serviceError,
         email: emailError,
+        mobileNumber: mobileError,
         consentAgreed: consentError,
       });
       return;
@@ -189,16 +178,13 @@ export default function LeadPopup({
     setSubmissionError('');
 
     try {
-      // Send to Google Apps Script Web App with timeout protection
       const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx9jj5AsS0f50Fi0VkCf3n8krt6THC75VMz34Cqq5OLkziaQ7nojY7CUF1fCefG4mHbug/exec';
       
       const submitData = new URLSearchParams();
-      submitData.append("name", formData.fullName);
-      submitData.append("mobile", formData.mobileNumber);
-      submitData.append("email", formData.email || "");
-      submitData.append("city", formData.city || "");
-      submitData.append("service", formData.interestedService);
-      submitData.append("experience", formData.tradingExperience || "");
+      submitData.append("name", formData.fullName.trim());
+      submitData.append("email", formData.email.trim());
+      submitData.append("mobile", formData.mobileNumber.trim());
+      submitData.append("service", preselectedService || "Equity Research");
 
       submitData.append("utm_source", utmParams.utm_source || "");
       submitData.append("utm_medium", utmParams.utm_medium || "");
@@ -218,8 +204,12 @@ export default function LeadPopup({
 
       clearTimeout(timeoutId);
 
-      // Successful backend acceptance -> Trigger Meta Pixel conversion -> Success State
-      trackLeadConversion();
+      // Track lead conversion in Meta Pixel & GA4
+      trackLeadConversion({
+        submissionId: `popup_${Date.now()}`,
+        formType: 'popup',
+        service: preselectedService || 'Equity Research',
+      });
       setIsSuccess(true);
     } catch (err) {
       console.error('Lead submission error:', err);
@@ -245,10 +235,10 @@ export default function LeadPopup({
     >
       <div 
         ref={modalRef}
-        className="bg-white rounded-2xl w-[92%] sm:w-full max-w-[480px] p-5 sm:p-7 shadow-2xl border border-slate-200 relative my-auto max-h-[90vh] flex flex-col justify-between overflow-y-auto motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95 duration-200"
+        className="bg-white rounded-2xl w-[92%] sm:w-full max-w-[460px] p-5 sm:p-6 shadow-2xl border border-slate-200 relative my-auto max-h-[92vh] flex flex-col justify-between overflow-y-auto motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95 duration-200"
         onClick={e => e.stopPropagation()}
       >
-        {/* Clearly Visible X Close Button in Top-Right Corner */}
+        {/* Close Button in Top-Right Corner */}
         <button
           type="button"
           id="lead-popup-close-btn"
@@ -269,10 +259,10 @@ export default function LeadPopup({
               <CheckCircle className="w-8 h-8" />
             </div>
             <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 mb-2">
-              Thank You!
+              Inquiry Received
             </h3>
             <p className="text-sm sm:text-base text-slate-700 max-w-sm mx-auto mb-6 leading-relaxed">
-              Your inquiry has been submitted successfully. Our team will contact you shortly.
+              Thank you. Your inquiry has been submitted successfully. Our team will contact you shortly regarding our paid research services.
             </p>
 
             <button
@@ -285,14 +275,14 @@ export default function LeadPopup({
             </button>
           </div>
         ) : (
-          /* FORM STATE */
+          /* FORM STATE - ONLY 3 FIELDS: Name, Email, Number */
           <div>
             {/* Top Brand & Regulatory Header */}
             <div className="pr-8 mb-4">
               <div className="flex items-center gap-1.5 text-emerald-800 font-bold text-sm tracking-tight mb-1">
                 <span className="text-slate-900 font-extrabold text-base">Tru Paisa</span>
               </div>
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 border border-slate-200/80 text-slate-800 text-xs font-semibold mb-3">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 border border-slate-200/80 text-slate-800 text-xs font-semibold mb-2">
                 <Shield className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                 <span>SEBI Registered Research Analyst • Reg. {VERIFIED_ANALYST_INFO.sebiRegNo}</span>
               </div>
@@ -307,14 +297,14 @@ export default function LeadPopup({
               
               {/* Supporting Text */}
               <p className="text-xs sm:text-sm text-slate-600 mt-1 leading-normal">
-                Plans starting from <span className="font-bold text-slate-900">₹5,999 + 18% GST</span>. Our team will contact you to discuss available paid research services and plans.
+                Plans starting from <span className="font-bold text-slate-900">₹5,999 + 18% GST</span>. Please enter your details below.
               </p>
             </div>
 
             {/* Popup Form */}
             <form id="lead-popup-form" onSubmit={handleSubmit} noValidate className="space-y-3.5">
               
-              {/* 1. Full Name (Required) */}
+              {/* 1. Full Name */}
               <div>
                 <label 
                   htmlFor="popup-field-fullName" 
@@ -349,7 +339,41 @@ export default function LeadPopup({
                 )}
               </div>
 
-              {/* 2. Mobile Number (Required - Indian 10 digits) */}
+              {/* 2. Email Address */}
+              <div>
+                <label 
+                  htmlFor="popup-field-email" 
+                  className="block text-xs font-bold text-slate-800 mb-1"
+                >
+                  Email Address <span className="text-emerald-700 font-bold">*</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <Mail className="w-4 h-4" />
+                  </div>
+                  <input
+                    type="email"
+                    id="popup-field-email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="name@example.com"
+                    required
+                    autoComplete="email"
+                    className={`w-full pl-10 pr-3.5 py-2.5 text-base sm:text-sm bg-white border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-600/30 transition-colors text-slate-900 placeholder:text-slate-400 min-h-[44px] ${
+                      errors.email ? 'border-red-400 bg-red-50/20' : 'border-slate-300 hover:border-slate-400'
+                    }`}
+                  />
+                </div>
+                {errors.email && (
+                  <p className="mt-1 text-xs text-red-600 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{errors.email}</span>
+                  </p>
+                )}
+              </div>
+
+              {/* 3. Mobile Number */}
               <div>
                 <label 
                   htmlFor="popup-field-mobileNumber" 
@@ -390,111 +414,19 @@ export default function LeadPopup({
                 )}
               </div>
 
-              {/* 3. Interested Service (Required Dropdown) */}
-              <div>
-                <label 
-                  htmlFor="popup-field-interestedService" 
-                  className="block text-xs font-bold text-slate-800 mb-1"
-                >
-                  Interested Service <span className="text-emerald-700 font-bold">*</span>
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                    <Briefcase className="w-4 h-4" />
-                  </div>
-                  <select
-                    id="popup-field-interestedService"
-                    name="interestedService"
-                    value={formData.interestedService}
-                    onChange={handleChange}
-                    required
-                    className={`w-full pl-10 pr-8 py-2.5 text-base sm:text-sm bg-white border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-600/30 transition-colors text-slate-900 appearance-none cursor-pointer min-h-[44px] ${
-                      errors.interestedService ? 'border-red-400 bg-red-50/20' : 'border-slate-300 hover:border-slate-400'
-                    }`}
-                  >
-                    <option value="">Select a service</option>
-                    <option value="Equity Research">Equity Research</option>
-                    <option value="Intraday Research">Intraday Research</option>
-                    <option value="Positional Research">Positional Research</option>
-                    <option value="Futures Research">Futures Research</option>
-                    <option value="Options Research">Options Research</option>
-                  </select>
-                  <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
-                    ▼
-                  </div>
+              {/* Paid Service Notice */}
+              <div className="p-3 bg-amber-50/80 border border-amber-200/90 rounded-xl text-left">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-amber-950 mb-0.5">
+                  <AlertCircle className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                  <span>Paid Research Services Notice</span>
                 </div>
-                {errors.interestedService && (
-                  <p className="mt-1 text-xs text-red-600 flex items-center gap-1">
-                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                    <span>{errors.interestedService}</span>
-                  </p>
-                )}
-              </div>
-
-              {/* 4 & 5: Optional Trading Experience & Email Address */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-0.5">
-                {/* 4. Trading Experience (Optional) */}
-                <div>
-                  <label 
-                    htmlFor="popup-field-tradingExperience" 
-                    className="block text-xs font-semibold text-slate-700 mb-1"
-                  >
-                    Trading Experience <span className="text-[10px] font-normal text-slate-500">(Optional)</span>
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                      <Award className="w-3.5 h-3.5" />
-                    </div>
-                    <select
-                      id="popup-field-tradingExperience"
-                      name="tradingExperience"
-                      value={formData.tradingExperience}
-                      onChange={handleChange}
-                      className="w-full pl-9 pr-7 py-2 text-base sm:text-xs bg-white border border-slate-300 hover:border-slate-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-600/30 transition-colors text-slate-900 appearance-none cursor-pointer min-h-[40px]"
-                    >
-                      <option value="">Select your experience</option>
-                      <option value="Beginner">Beginner</option>
-                      <option value="Less than 1 year">Less than 1 year</option>
-                      <option value="1–3 years">1–3 years</option>
-                      <option value="More than 3 years">More than 3 years</option>
-                    </select>
-                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400 text-[10px]">
-                      ▼
-                    </div>
-                  </div>
-                </div>
-
-                {/* 5. Email Address (Optional) */}
-                <div>
-                  <label 
-                    htmlFor="popup-field-email" 
-                    className="block text-xs font-semibold text-slate-700 mb-1"
-                  >
-                    Email Address <span className="text-[10px] font-normal text-slate-500">(Optional)</span>
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                      <Mail className="w-3.5 h-3.5" />
-                    </div>
-                    <input
-                      type="email"
-                      id="popup-field-email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      placeholder="name@example.com"
-                      autoComplete="email"
-                      className="w-full pl-9 pr-3 py-2 text-base sm:text-xs bg-white border border-slate-300 hover:border-slate-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-600/30 transition-colors text-slate-900 placeholder:text-slate-400 min-h-[40px]"
-                    />
-                  </div>
-                  {errors.email && (
-                    <p className="mt-0.5 text-[11px] text-red-600">{errors.email}</p>
-                  )}
-                </div>
+                <p className="text-[11px] text-amber-900 leading-relaxed">
+                  Tru Paisa provides paid research advisory services starting from <strong>₹5,999 + 18% GST</strong>. We do not provide free tips, free trials, or guaranteed returns.
+                </p>
               </div>
 
               {/* Consent Checkbox */}
-              <div className="pt-1.5">
+              <div className="pt-0.5">
                 <div className="flex items-start gap-2.5">
                   <input
                     type="checkbox"
@@ -527,8 +459,8 @@ export default function LeadPopup({
                 </div>
               )}
 
-              {/* Large Primary CTA Button */}
-              <div className="pt-2">
+              {/* Primary CTA Button */}
+              <div className="pt-1.5">
                 <button
                   type="submit"
                   id="lead-popup-submit-btn"

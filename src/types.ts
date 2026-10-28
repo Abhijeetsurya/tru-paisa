@@ -8,7 +8,20 @@ export type TradingExperience =
   | 'Beginner'
   | 'Less than 1 year'
   | '1–3 years'
-  | 'More than 3 years';
+  | '3–5 years'
+  | 'More than 5 years';
+
+export type SubscriptionTimeline =
+  | 'Immediately'
+  | 'Within 7 days'
+  | 'Within 30 days'
+  | 'Just exploring';
+
+export type PreferredSubscription =
+  | 'Weekly'
+  | 'Monthly'
+  | 'Quarterly'
+  | 'Not sure';
 
 export type ResearchServiceType = 
   | 'Equity Research'
@@ -19,11 +32,13 @@ export type ResearchServiceType =
 
 export interface LeadFormData {
   fullName: string;
-  mobileNumber: string;
   email: string;
-  city: string;
-  tradingExperience: TradingExperience | '';
-  interestedService: ResearchServiceType | '';
+  mobileNumber: string;
+  city?: string;
+  tradingExperience?: TradingExperience | '';
+  subscriptionTimeline?: SubscriptionTimeline | '';
+  preferredSubscription?: PreferredSubscription | '';
+  interestedService?: ResearchServiceType | '';
   consentAgreed: boolean;
 }
 
@@ -33,6 +48,9 @@ export interface UTMParameters {
   utm_campaign?: string;
   utm_content?: string;
   utm_term?: string;
+  gclid?: string;
+  gbraid?: string;
+  wbraid?: string;
   referrer?: string;
   page_url?: string;
 }
